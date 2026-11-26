@@ -16,6 +16,7 @@ contract TestUSDC {
     error InsufficientBalance(uint256 available, uint256 required);
     error InsufficientAllowance(uint256 allowed, uint256 required);
     error ZeroAddress();
+    error AllowanceChanged(uint256 actual, uint256 expected);
 
     function transfer(address to, uint256 amount) external returns (bool) {
         _move(msg.sender, to, amount);
@@ -26,6 +27,30 @@ contract TestUSDC {
         if (spender == address(0)) revert ZeroAddress();
         allowance[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function increaseAllowance(address spender, uint256 addedValue) external returns (bool) {
+        if (spender == address(0)) revert ZeroAddress();
+        allowance[msg.sender][spender] += addedValue;
+        emit Approval(msg.sender, spender, allowance[msg.sender][spender]);
+        return true;
+    }
+
+    function decreaseAllowance(address spender, uint256 subtractedValue) external returns (bool) {
+        uint256 current = allowance[msg.sender][spender];
+        if (current < subtractedValue) revert InsufficientAllowance(current, subtractedValue);
+        allowance[msg.sender][spender] = current - subtractedValue;
+        emit Approval(msg.sender, spender, allowance[msg.sender][spender]);
+        return true;
+    }
+
+    function safeApprove(address spender, uint256 expectedCurrent, uint256 newAmount) external returns (bool) {
+        if (spender == address(0)) revert ZeroAddress();
+        uint256 current = allowance[msg.sender][spender];
+        if (current != expectedCurrent) revert AllowanceChanged(current, expectedCurrent);
+        allowance[msg.sender][spender] = newAmount;
+        emit Approval(msg.sender, spender, newAmount);
         return true;
     }
 
@@ -41,13 +66,6 @@ contract TestUSDC {
         return true;
     }
 
-    // ------------------------------------------------------------------
-    // 7) mint - naye token banana
-    //    ⚠️ Yahan KOI BHI mint kar sakta hai (faucet), sirf testing ke liye.
-    //    Asli token mein agar owner jab chahe mint kar sake, to woh
-    //    supply badha ke price gira sakta hai (rug pull). ScamShield ka
-    //    contract scanner aise "mint" functions ko RED FLAG karega.
-    // ------------------------------------------------------------------
     function mint(address to, uint256 amount) external {
         if (to == address(0)) revert ZeroAddress();
         totalSupply += amount;
@@ -55,15 +73,12 @@ contract TestUSDC {
         emit Transfer(address(0), to, amount);
     }
 
-    // ------------------------------------------------------------------
-    // Andar ka helper: hisaab mein se kam karo, doosre mein jama karo
-    // ------------------------------------------------------------------
     function _move(address from, address to, uint256 amount) private {
         if (to == address(0)) revert ZeroAddress();
         uint256 bal = balanceOf[from];
         if (bal < amount) revert InsufficientBalance(bal, amount);
         unchecked {
-            balanceOf[from] = bal - amount; // upar check ho chuka, underflow mumkin nahi
+            balanceOf[from] = bal - amount;
         }
         balanceOf[to] += amount;
         emit Transfer(from, to, amount);
