@@ -1,0 +1,15 @@
+{
+  "name": "scamshield-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ScamShield risk engine: decodes a transaction and tells the user if it is dangerous",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "ethers": "6.13.4",
+    "express": "4.21.2"
+  }
+}

